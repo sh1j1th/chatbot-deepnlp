@@ -170,3 +170,38 @@ def encoded_rnn_layer(rnn_inputs, rnn_size, num_layers, keep_prob, sequence_leng
                                                        dtype = tf.float32)
     return encoder_state
     
+###decoding the training set
+def decode_training_set(encoder_state, decoder_cell, decoder_embedded_input, sequence_length, decoding_scope, output_function, keep_prob, batch_size):
+    attention_states = tf.zeros([batch_size, 1, decoder_cell.output_size])
+    attention_keys, attention_values, attention_score_function, attention_construct_function = tf.contrib.seq2seq.prepare_attention(attention_states, attention_option = 'bahdanau', num_units = decoder_cell.output_size)
+    training_decoder_function = tf.contrib.seq2seq.attention_decoder_fn_train(encoder_state[0],
+                                                                              attention_keys,
+                                                                              attention_values,
+                                                                              attention_score_function,
+                                                                              attention_construct_function,
+                                                                              name = "attn_dec_train")
+    decoder_output, _, _ = tf.contrib.seq2seq.dynamic_rnn_decoder(decoder_cell,
+                                                                  training_decoder_function,
+                                                                  decoder_embedded_input,
+                                                                  sequence_length,
+                                                                  scope = decoding_scope)
+    decoder_output_dropout = tf.nn.dropout(decoder_output, keep_prob)
+    return output_function(decoder_output_dropout)
+
+###decoding the test/validation set
+def decode_test_set(encoder_state, decoder_cell, decoder_embedded_input, sos_id, eos_id, maximum_length, num_words, sequence_length, decoding_scope, output_function, keep_prob, batch_size):
+    attention_states = tf.zeros([batch_size, 1, decoder_cell.output_size])
+    attention_keys, attention_values, attention_score_function, attention_construct_function = tf.contrib.seq2seq.prepare_attention(attention_states, attention_option = 'bahdanau', num_units = decoder_cell.output_size)
+    training_decoder_function = tf.contrib.seq2seq.attention_decoder_fn_train(encoder_state[0],
+                                                                              attention_keys,
+                                                                              attention_values,
+                                                                              attention_score_function,
+                                                                              attention_construct_function,
+                                                                              name = "attn_dec_train")
+    decoder_output, _, _ = tf.contrib.seq2seq.dynamic_rnn_decoder(decoder_cell,
+                                                                  training_decoder_function,
+                                                                  decoder_embedded_input,
+                                                                  sequence_length,
+                                                                  scope = decoding_scope)
+    decoder_output_dropout = tf.nn.dropout(decoder_output, keep_prob)
+    return output_function(decoder_output_dropout)
